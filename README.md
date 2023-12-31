@@ -23,7 +23,7 @@ At the moment, the only option I provide is to build this from source, because t
 ```
 mkdir build
 cd build/
-cmake ../src/
+cmake ..
 make
 cmake --install . --prefix ..
 cd ..
