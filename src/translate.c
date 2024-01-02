@@ -78,6 +78,8 @@ void parallel_translate(translate_t * data) {
         thread_args[thread]->protein = malloc(((data->len / 3) + 6) * sizeof (char));
         if (!thread_args[thread]->protein)
             error_and_exit("Unable to allocate memory for one thread's protein\n");
+        //thread_args[thread]->protein[0] = 0;
+        memset(thread_args[thread]->protein, 0, ((data->len / 3) + 6) * sizeof (char));
 
         if (data->verbose)
             fprintf(stderr, "%s\tThread is %d - setting frame%s\n", GREEN, thread, ENDC);
@@ -103,7 +105,6 @@ void parallel_translate(translate_t * data) {
 
         thread_args[thread]->num_stops = 0;
         thread_args[thread]->thread_number = thread;
-        thread_args[thread]->seqname = malloc((strlen(data->name) + 2) * sizeof (char));
         thread_args[thread]->seqname = strdup(data->name);
         thread_args[thread]->translation_table = data->translation_table;
         thread_args[thread]->len = data->len;
@@ -136,22 +137,25 @@ void parallel_translate(translate_t * data) {
         char * substr = malloc((strlen(thread_args[thread]->protein) + 2) * sizeof (char));
         if (!substr)
             error_and_exit("Unable to allocate memory for one thread's substring\n");
+        substr[0] = 0;
 
         // note: above, we save the last stop as the last protein position
         for (int i=0; i <= thread_args[thread]->num_stops; i++) {
             int seq_to = thread_args[thread]->aa_stops[i] + 1; // we want to include the stop codon
             if (seq_from == 0)
-                strncpy(substr, thread_args[thread]->protein, seq_to);
+                memcpy(substr, thread_args[thread]->protein, seq_to);
             else
-                strncpy(substr, thread_args[thread]->protein + seq_from, seq_to - seq_from);
+                memcpy(substr, thread_args[thread]->protein + seq_from, seq_to - seq_from);
 
             substr[seq_to - seq_from] = '\0';
 
-            data->orfs[data->num_orfs] = malloc(((seq_to - seq_from) + 1) * sizeof (char));
+            data->orfs[data->num_orfs] = malloc(strlen(substr) + 1 * sizeof (char));
             if (!data->orfs[data->num_orfs])
                 error_and_exit("Unable to allocate memory for the number of ORFs\n");
+            data->orfs[data->num_orfs][0] = 0;
 
             strcpy(data->orfs[data->num_orfs], substr);
+            // memcpy(data->orfs[data->num_orfs], substr, strlen(substr));
 
             size_t needed = snprintf(NULL, 0, "%s frame %c%d %d %d",
                                      thread_args[thread]->seqname,
@@ -160,7 +164,7 @@ void parallel_translate(translate_t * data) {
                                      thread_args[thread]->bp_starts[i],
                                      thread_args[thread]->bp_stops[i]
             );
-            data->orf_names[data->num_orfs] = malloc(needed+2);
+            data->orf_names[data->num_orfs] = malloc(needed + 1);
             if (!data->orf_names[data->num_orfs])
                 error_and_exit("Unable to allocate memory for the ORF's name\n");
 
@@ -171,6 +175,7 @@ void parallel_translate(translate_t * data) {
                     thread_args[thread]->bp_starts[i],
                     thread_args[thread]->bp_stops[i]
             );
+
             seq_from = seq_to;
             data->num_orfs++;
         }
@@ -179,6 +184,7 @@ void parallel_translate(translate_t * data) {
         free(thread_args[thread]->bp_stops);
         free(thread_args[thread]->aa_stops);
         free(thread_args[thread]->protein);
+        free(thread_args[thread]->seqname);
         free(thread_args[thread]);
     }
 
