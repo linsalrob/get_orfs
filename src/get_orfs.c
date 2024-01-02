@@ -69,7 +69,6 @@ int main(int argc, char* argv[]) {
     while ((gopt = getopt_long(argc, argv, "f:t:l:d", long_options, &option_index)) != -1) {
         switch (gopt) {
             case 'f' :
-                opt->fasta_file = malloc((strlen(optarg) + 1) * sizeof (char)); // RAE needed?
                 opt->fasta_file = strdup(optarg);
                 break;
             case 't':
@@ -136,17 +135,20 @@ int main(int argc, char* argv[]) {
             error_and_exit("Unable to allocate memory for the sequence ORFs\n");
 
 
+        // Here I tried to dynamically figure out how much memory we might need, but I gave up and just set it to a million
+        // THere are definitely better ways to do this.
         // the sequence name is "seq_name frame +x start stop"
         // assuming sequence length less than 1e9 (10 characters each for start/stop), we need 20 + seq_name + 7 for " frame " + 2 for [+/-]x + 2 spaces
         // * the number of ORFs we find. Assuming most orfs are 1 per kb of the sequence should be about seqlen /300
-        int seqnamesize = ((31 + strlen(seq->name.s)) * (seq->seq.l/10)) * sizeof (char);
+        //int seqnamesize = ((31 + strlen(seq->name.s)) * (seq->seq.l/10)) * sizeof (char);
+        size_t seqnamesize = 1000000;
 
         if (opt->debug)
-            fprintf(stderr, "%sWARN: Estimated we might need %d bytes for ORF names%s\n", YELLOW, seqnamesize, ENDC);
+            fprintf(stderr, "%sWARN: Estimated we might need %ld bytes for ORF names%s\n", YELLOW, seqnamesize, ENDC);
         sequence->orf_names = malloc(seqnamesize); // somewhat randomly allocate the same size of the memory as above
 
         if (!sequence->orf_names)
-            error_and_exit( "Unable to allocate memory for the sequence ORF names\n");
+            error_and_exit("Unable to allocate memory for the sequence ORF names\n");
 
 
         parallel_translate(sequence);
@@ -156,7 +158,12 @@ int main(int argc, char* argv[]) {
             if (strlen(sequence->orfs[orf]) > opt->minlen)
                 printf(">orf%d [%s]\n%s\n", ++orfcount, sequence->orf_names[orf], sequence->orfs[orf]);
 
+        for (int orf=0; orf<sequence->num_orfs; orf++) {
+            free(sequence->orfs[orf]);
+            free(sequence->orf_names[orf]);
+        }
         free(sequence->orfs);
+        free(sequence->orf_names);
         free(sequence->dnaseq);
         free(sequence->name);
 /*
