@@ -119,16 +119,18 @@ void parallel_translate(translate_t * data) {
 
     // wait for the threads to finish and create two associative arrays: name and sequence
 
+    int current_name_sz = 0;
+    int current_orf_sz = 0;
     for (int thread = 0; thread < 6; thread++) {
         pthread_join(threads[thread], NULL);
         int seq_from = 0;
 
         if (data->verbose) {
-            printf("%s\n%s\n", PINK, thread_args[thread]->seqname);
-
-            for (int i = 0; i <= thread_args[thread]->len / 3; i++)
+            printf("%s\n%s%s\n", PINK, thread_args[thread]->seqname, ENDC);
+            // this block prints numbers 0-9 repetatively and then prints the sequence
+            /*for (int i = 0; i <= thread_args[thread]->len / 3; i++)
                 printf("%d", i % 10);
-            printf("\n%s%s\n", thread_args[thread]->protein, ENDC);
+            printf("\n%s%s\n", thread_args[thread]->protein, ENDC);*/
         }
 
         if (!thread_args[thread]->protein)
@@ -152,10 +154,27 @@ void parallel_translate(translate_t * data) {
             data->orfs[data->num_orfs] = malloc(strlen(substr) + 1 * sizeof (char));
             if (!data->orfs[data->num_orfs])
                 error_and_exit("Unable to allocate memory for the number of ORFs\n");
-            data->orfs[data->num_orfs][0] = 0;
+            memset(data->orfs[data->num_orfs], 0, strlen(substr) + 1);
 
             strcpy(data->orfs[data->num_orfs], substr);
-            // memcpy(data->orfs[data->num_orfs], substr, strlen(substr));
+            current_orf_sz += strlen(substr) + 1;
+
+            // realloc if needed
+            if (current_orf_sz > data->orf_sz * 0.9) {
+                size_t new_orf_sz = data->orf_sz  * 2;
+                char **neworfs = realloc(data->orfs, new_orf_sz);
+                if (!neworfs) {
+                    // PANIC
+                    fprintf(stderr, "%sUnable to reallocate more memory for the ORFs. ", RED);
+                    fprintf(stderr, "We requested %ld bytes.%s\n", new_orf_sz, ENDC);
+                } else {
+                    data->orfs = neworfs;
+                    data->orf_sz = new_orf_sz;
+                    if (data->verbose)
+                        fprintf(stderr, "%sRealloc'd memory for ORFs to %ld bytes%s\n",
+                                GREEN, new_orf_sz, ENDC);
+                }
+            }
 
             size_t needed = snprintf(NULL, 0, "%s frame %c%d %d %d",
                                      thread_args[thread]->seqname,
@@ -175,6 +194,25 @@ void parallel_translate(translate_t * data) {
                     thread_args[thread]->bp_starts[i],
                     thread_args[thread]->bp_stops[i]
             );
+
+            current_name_sz += needed + 1;
+            // do we need to realloc this?
+            if (current_name_sz > data->orf_name_sz * 0.9) {
+                size_t new_name_sz = data->orf_name_sz * 2;
+                char ** newnames = realloc(data->orf_names, new_name_sz);
+                if (!newnames) {
+                    // Also PANIC
+                    fprintf(stderr, "%sUnable to reallocate more memory for the ORF NAMES. ", RED);
+                    fprintf(stderr, "We requested %ld bytes.%s\n", new_name_sz, ENDC);
+                } else {
+                    data->orf_names = newnames;
+                    data->orf_name_sz = new_name_sz;
+                    if (data->verbose)
+                        fprintf(stderr, "%sRealloc'd memory for ORF NAMES to %ld bytes%s\n",
+                                GREEN, new_name_sz, ENDC);
+                }
+
+            }
 
             seq_from = seq_to;
             data->num_orfs++;

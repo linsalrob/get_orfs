@@ -28,6 +28,8 @@ typedef struct translate_struct {
     long int len; // the DNA sequence length
     int translation_table; // the translation table to yse
     bool verbose; // more output
+    size_t orf_name_sz; // how much size have we allocated for the ORF names
+    size_t orf_sz; // how much space have we allocated for the ORFs
     char **orfs; // an array of all the ORFs
     char **orf_names; // an array of all the names for the ORFs
     int num_orfs; // how many orfs did we find?
