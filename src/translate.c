@@ -14,6 +14,17 @@
 #include "seqs_to_ints.h"
 #include "translate.h"
 
+void translate_one_sequence(unsigned char * enc, int seqlen, int translation_table, char * protein) {
+    /*
+    * translate one DNA strand only
+    */
+    int ppos = 0;
+    for (int i=0; i<seqlen-2; i+=3) {
+        int posn = (enc[i] << 4) + (enc[i + 1] << 2) + enc[i + 2];
+        protein[ppos++] = CODONS[translation_table][posn];
+    }
+}
+
 void * threaded_translate_sequence(void *thrargs) {
     /*
      * enc: the encoded original sequence

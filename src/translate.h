@@ -39,6 +39,8 @@ typedef struct translate_struct {
 // A multi-threaded function to translate an encoded sequence
 void * threaded_translate_sequence(void *);
 
+// a single sequence translation
+void translate_one_sequence(unsigned char *, int, int, char * );
 
 // A function to call the translate but in parallel
 void parallel_translate(translate_t *);
