@@ -157,7 +157,6 @@ void parallel_encode_sequence(char *seq, unsigned char *enc, int num_threads) {
     int from = 0;
     int to = fragments;
     int thread_number = 0;
-    fprintf(stderr, "Encoding a sequence of length %ld using %d threads\n", strlen(seq), num_threads);
     while (to < strlen(seq) - fragments) {
         thread_args[thread_number] = malloc(sizeof(thtranslate_t));
         thread_args[thread_number]->from = from;
