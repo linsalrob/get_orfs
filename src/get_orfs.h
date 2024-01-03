@@ -11,6 +11,7 @@ struct options {
     int translation_table;
     bool debug;
     int minlen;
+    int num_threads;
 };
 
 

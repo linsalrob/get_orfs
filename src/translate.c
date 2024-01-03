@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include "colours.h"
@@ -50,18 +51,33 @@ void parallel_translate(translate_t * data) {
      * translate the DNA sequence using threading
      */
 
+    clock_t begin = clock();
+
     if (data->verbose)
         fprintf(stderr, "%sRead %s with length %ld%s\n", BLUE, data->name, data->len, ENDC);
     unsigned char *enc = malloc((data->len + 1) * sizeof(unsigned char));
     if (!enc)
         error_and_exit("Unable to allocate memory for the encoded sequence");
+    memset(enc, 0, (data->len + 1) * sizeof(unsigned char));
 
-    encode_sequence(data->dnaseq, enc);
+    parallel_encode_sequence(data->dnaseq, enc, data->num_threads);
+    //encode_sequence(data->dnaseq, enc);
+
+    clock_t timer = clock();
+    if (data->verbose)
+        fprintf(stderr, "%sEncoded %s in %ld seconds%s\n",
+                BLUE, data->name, (timer-begin)/CLOCKS_PER_SEC, ENDC);
     unsigned char *rcenc = malloc((data->len + 1) * sizeof(unsigned char));
     if (!rcenc)
         error_and_exit("Unable to allocate memory for the reverse complement");
+    memset(rcenc, 0, (data->len + 1) * sizeof(unsigned char));
 
     reverse_complement_sequence(enc, rcenc, data->len);
+    clock_t newtimer = clock();
+    if (data->verbose)
+        fprintf(stderr, "%sReverse complemented %s in %ld seconds (%ld seconds from starting)%s\n",
+                BLUE, data->name, (newtimer-timer)/CLOCKS_PER_SEC, (newtimer-begin)/CLOCKS_PER_SEC, ENDC);
+    timer = newtimer;
 
     // print_translated_sequence(unsigned char* enc, char * protein, int start_frame, int translation_table)
     pthread_t threads[6];
@@ -117,16 +133,23 @@ void parallel_translate(translate_t * data) {
                     ENDC);
     }
 
+    newtimer = clock();
+    if (data->verbose)
+        fprintf(stderr, "%sAllocated 6 threads for %s in %ld seconds (%ld seconds from starting)%s\n",
+                BLUE, data->name, (newtimer-timer)/CLOCKS_PER_SEC, (newtimer-begin)/CLOCKS_PER_SEC, ENDC);
+    timer = newtimer;
+
     // wait for the threads to finish and create two associative arrays: name and sequence
 
     int current_name_sz = 0;
     int current_orf_sz = 0;
     for (int thread = 0; thread < 6; thread++) {
+        clock_t thread_join_start = clock();
         pthread_join(threads[thread], NULL);
         int seq_from = 0;
 
         if (data->verbose) {
-            printf("%s\n%s%s\n", PINK, thread_args[thread]->seqname, ENDC);
+            fprintf(stderr, "%s\n%s%s\n", PINK, thread_args[thread]->seqname, ENDC);
             // this block prints numbers 0-9 repetatively and then prints the sequence
             /*for (int i = 0; i <= thread_args[thread]->len / 3; i++)
                 printf("%d", i % 10);
@@ -216,6 +239,7 @@ void parallel_translate(translate_t * data) {
 
             seq_from = seq_to;
             data->num_orfs++;
+
         }
         free(substr);
         free(thread_args[thread]->bp_starts);
@@ -224,6 +248,8 @@ void parallel_translate(translate_t * data) {
         free(thread_args[thread]->protein);
         free(thread_args[thread]->seqname);
         free(thread_args[thread]);
+        if (data->verbose)
+            fprintf(stderr, "%sThread %d took %ld seconds to compute ORFs%s\n", BLUE, thread, (clock() - thread_join_start)/CLOCKS_PER_SEC, ENDC);
     }
 
     free(enc);

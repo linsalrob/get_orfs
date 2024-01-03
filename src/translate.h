@@ -33,6 +33,7 @@ typedef struct translate_struct {
     char **orfs; // an array of all the ORFs
     char **orf_names; // an array of all the names for the ORFs
     int num_orfs; // how many orfs did we find?
+    int num_threads; // how many threads to use (initially for encoding only)
 } translate_t;
 
 // A multi-threaded function to translate an encoded sequence

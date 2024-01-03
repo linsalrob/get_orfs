@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <stdint.h>
 #include "colours.h"
+#include "seqs_to_ints.h"
+#include "error.h"
 
 // ALternate DNA encoding lookup table
 //                         A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z     
@@ -23,12 +26,13 @@ int encode_base(int base) {
 	 * 	T : 3 : 11
 	 *
 	 */
-	if ((base >= (int)'a') && (base <= (int)'z')) {
+    if ((base >= (int)'A') && (base <= (int)'Z')) {
+        return dnaEncodeTable[base - (int)'A'];
+    }
+    if ((base >= (int)'a') && (base <= (int)'z')) {
 		return dnaEncodeTable[base - (int)'a'];
 	}
-	if ((base >= (int)'A') && (base <= (int)'Z')) {
-		return dnaEncodeTable[base - (int)'A'];
-	}
+
 	fprintf(stderr, "We can't encode a base that is not [a-z][A-Z]. We have |%c|\n", (char) base);
 	return 0;
 }
@@ -121,6 +125,65 @@ void encode_sequence(char *seq, unsigned char *enc) {
      */
     for (int i =0; i<strlen(seq); i++)
         enc[i] = encode_base(seq[i]);
+}
+
+void * threaded_encode_sequence(void *thtranslate) {
+    /*
+     * A threaded function that writes to the encoded sequence.
+     *
+     * From is inclusive, so 0 to ...
+     * To is exclusive so the last position needs to be strlen(seq) + 1
+     */
+    thtranslate_t *translate_args = (thtranslate_t *) thtranslate;
+    for (int i=translate_args->from; i < translate_args->to; i++)
+        translate_args->enc[i] = encode_base(translate_args->seq[i]);
+    return NULL;
+}
+
+void parallel_encode_sequence(char *seq, unsigned char *enc, int num_threads) {
+    /*
+     * Use threading to encode the sequence.
+     *
+     * We need to check we encode every base :)
+     */
+    pthread_t threads[num_threads];
+    int starts[num_threads];
+    memset(starts, 0, num_threads * sizeof (*starts));
+    thtranslate_t **thread_args = malloc(num_threads * sizeof(thtranslate_t *));
+    if (!thread_args)
+        error_and_exit("Unable to allocate memory for the threading\n");
+
+    int fragments = strlen(seq)/num_threads;
+    int from = 0;
+    int to = fragments;
+    int thread_number = 0;
+    fprintf(stderr, "Encoding a sequence of length %ld using %d threads\n", strlen(seq), num_threads);
+    while (to < strlen(seq) - fragments) {
+        thread_args[thread_number] = malloc(sizeof(thtranslate_t));
+        thread_args[thread_number]->from = from;
+        thread_args[thread_number]->to = to;
+        thread_args[thread_number]->seq = seq;
+        thread_args[thread_number]->enc = enc;
+        starts[thread_number] = pthread_create(&threads[thread_number], NULL, &threaded_encode_sequence, (void *) thread_args[thread_number]);
+        from = to;
+        to += fragments;
+        thread_number++;
+    }
+    to = strlen(seq);
+    thread_args[thread_number] = malloc(sizeof(thtranslate_t));
+    thread_args[thread_number]->seq = seq;
+    thread_args[thread_number]->enc = enc;
+    thread_args[thread_number]->from = from;
+    thread_args[thread_number]->to = to;
+    starts[thread_number] = pthread_create(&threads[thread_number], NULL, &threaded_encode_sequence, (void *) thread_args[thread_number]);
+
+    // join the threads and wait for them to finish before we can return anything
+    for (int thread_n = 0; thread_n <= thread_number; thread_n++) { // RAE Clean up
+        pthread_join(threads[thread_n], NULL);
+        free(thread_args[thread_n]);
+    }
+
+    free(thread_args);
 }
 
 void reverse_complement_sequence(unsigned char *enc, unsigned char * rc_enc, int seqlen) {

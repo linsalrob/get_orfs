@@ -26,9 +26,10 @@ KSEQ_INIT(gzFile, gzread);
 
 void help() {
     printf("USAGE: get_orfs\n");
-    printf("-t --translation_table <translation table (default=11)\n");
+    printf("-t --translation_table translation table (default=11)\n");
     printf("-f --fasta fasta file\n");
     printf("-l --length minimum length (default=1 amino acid)\n");
+    printf("-j --jobs number of parallel threads to use. We use 6 for the translation regardless of -j (default=8)\n");
     printf("-d --debug print debugging help");
     printf("-v --version print the version and exit\n");
 }
@@ -56,17 +57,19 @@ int main(int argc, char* argv[]) {
     opt->translation_table = 11;
     opt->debug = false;
     opt->minlen = 1;
+    opt->num_threads = 8;
 
     static struct option long_options[] = {
             {"fasta", required_argument, 0, 'f'},
             {"translation_table", required_argument, 0, 't'},
             {"length", required_argument, 0, 'l'},
+            {"jobs", required_argument, 0, 'j'},
             {"debug", no_argument, 0, 'd'},
             { 0, 0, 0, 0 }
     };
     int option_index = 0;
     int gopt;
-    while ((gopt = getopt_long(argc, argv, "f:t:l:d", long_options, &option_index)) != -1) {
+    while ((gopt = getopt_long(argc, argv, "f:t:l:j:d", long_options, &option_index)) != -1) {
         switch (gopt) {
             case 'f' :
                 opt->fasta_file = strdup(optarg);
@@ -76,6 +79,9 @@ int main(int argc, char* argv[]) {
                 break;
             case 'l':
                 opt->minlen = atoi(optarg);
+                break;
+            case 'j':
+                opt->num_threads = atoi(optarg);
                 break;
             case 'd':
                 opt->debug = true;
@@ -130,6 +136,7 @@ int main(int argc, char* argv[]) {
         sequence->translation_table = opt->translation_table;
         sequence->verbose = opt->debug;
         sequence->num_orfs = 0;
+        sequence->num_threads = opt->num_threads;
 
         // we initiate the ORFs to be 3x the sequence. They should actually be 1/3 the sequence (for codons)
         // x 6x the sequence for reading frames, but this allows a bit more.
