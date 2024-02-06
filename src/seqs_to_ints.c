@@ -144,16 +144,24 @@ void parallel_encode_sequence(char *seq, unsigned char *enc, int num_threads) {
     /*
      * Use threading to encode the sequence.
      *
-     * We need to check we encode every base :)
+     * fragments is the length of the part that each thread will encode
+     *
+     * In the simple example of 5bp divided over 3 threads, we'd actually use
+     * int(5/3) = 1 bp per thread => we need 5 threads
+     *
+     * So our real number of required threads is actually int(strlen(seq) / (int(strlen(seq)/num_threads))) + 1
+     *
      */
-    pthread_t threads[num_threads];
-    int starts[num_threads];
-    memset(starts, 0, num_threads * sizeof (*starts));
-    thtranslate_t **thread_args = malloc(num_threads * sizeof(thtranslate_t *));
+
+    int fragments = strlen(seq)/num_threads;
+    int needed_threads = (strlen(seq) / fragments) + 1;
+    pthread_t threads[needed_threads];
+    int starts[needed_threads];
+    memset(starts, 0, needed_threads * sizeof (*starts));
+    thtranslate_t **thread_args = malloc(needed_threads * sizeof(thtranslate_t *));
     if (!thread_args)
         error_and_exit("Unable to allocate memory for the threading\n");
 
-    int fragments = strlen(seq)/num_threads;
     int from = 0;
     int to = fragments;
     int thread_number = 0;
@@ -177,7 +185,7 @@ void parallel_encode_sequence(char *seq, unsigned char *enc, int num_threads) {
     starts[thread_number] = pthread_create(&threads[thread_number], NULL, &threaded_encode_sequence, (void *) thread_args[thread_number]);
 
     // join the threads and wait for them to finish before we can return anything
-    for (int thread_n = 0; thread_n <= thread_number; thread_n++) { // RAE Clean up
+    for (int thread_n = 0; thread_n <= thread_number; thread_n++) { 
         pthread_join(threads[thread_n], NULL);
         free(thread_args[thread_n]);
     }

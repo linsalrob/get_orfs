@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
         // we initiate the ORFs to be 3x the sequence. They should actually be 1/3 the sequence (for codons)
         // x 6x the sequence for reading frames, but this allows a bit more.
         // We remember the size so we know when to realloc
-        sequence->orf_sz = seq->seq.l * 3;
+        sequence->orf_sz = seq->seq.l * 6;
         sequence->orfs = malloc(sequence->orf_sz); // translation is x2 for fwd/rev, x3 for each frame, but /3 for amino acidds
         if (!sequence->orfs)
             error_and_exit("Unable to allocate memory for the sequence ORFs\n");

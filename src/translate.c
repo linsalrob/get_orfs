@@ -185,7 +185,7 @@ void parallel_translate(translate_t * data) {
 
             substr[seq_to - seq_from] = '\0';
 
-            data->orfs[data->num_orfs] = malloc(strlen(substr) + 1 * sizeof (char));
+            data->orfs[data->num_orfs] = malloc((strlen(substr) + 1) * sizeof (char));
             if (!data->orfs[data->num_orfs])
                 error_and_exit("Unable to allocate memory for the number of ORFs\n");
             memset(data->orfs[data->num_orfs], 0, strlen(substr) + 1);
