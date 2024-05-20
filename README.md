@@ -1,7 +1,7 @@
 [![Edwards Lab](https://img.shields.io/badge/Bioinformatics-EdwardsLab-03A9F4)](https://edwards.flinders.edu.au)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![GitHub language count](https://img.shields.io/github/languages/count/linsalrob/get_orfs)
-
+[![DOI](https://zenodo.org/badge/737426790.svg)](https://zenodo.org/doi/10.5281/zenodo.11218737)
 
 
 
