@@ -16,6 +16,6 @@ struct options {
 
 
 
-#define  __version__ 0.1
+#define  __version__ 0.2
 
 #endif //CODONS_GET_ORFS

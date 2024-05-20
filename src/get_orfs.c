@@ -162,9 +162,9 @@ int main(int argc, char* argv[]) {
         int orfcount = 0;
         for (int orf=0; orf<sequence->num_orfs; orf++)
             if (strlen(sequence->orfs[orf]) > opt->minlen)
-                printf(">orf%d [%s]\n%s\n", ++orfcount, sequence->orf_names[orf], sequence->orfs[orf]);
-
-        for (int orf=0; orf<sequence->num_orfs; orf++) {
+                printf(">%s-orf%d [%s]\n%s\n", sequence->name, ++orfcount, sequence->orf_names[orf], sequence->orfs[orf]);
+	
+	for (int orf=0; orf<sequence->num_orfs; orf++) {
             free(sequence->orfs[orf]);
             free(sequence->orf_names[orf]);
         }
