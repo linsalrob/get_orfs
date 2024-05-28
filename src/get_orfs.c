@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (argc == 2 && ((strcmp(argv[1], "-v") == 0) || (strcmp(argv[1], "--version") == 0))) {
-        printf("%s version: %f\n", argv[0], __version__);
+        printf("%s version: %s\n", argv[0], __version__);
         exit(0);
     }
 
