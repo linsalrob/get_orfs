@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: 'Get ORFs'
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Robert
+    name-particle: Robert
+    family-names: Edwards
+    email: raedwards@gmail.com
+    affiliation: Flinders University
+    orcid: 'https://orcid.org/0000-0001-8383-8949'
+doi: 10.5281/zenodo.11218738
+url: "https://github.com/linsalrob/get_orfs"
+abstract: >-
+  Extract Open Reading Frames from DNA sequences very quickly.
+keywords:
+  - metagenome
+  - genome
+  - phage
+  - prophage
+  - DNA sequencing
+  - microbiome
+  - bacteria
+  - virus
+license: MIT
+
+
+
